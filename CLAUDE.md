@@ -33,6 +33,46 @@ All code implemented. Not yet run. Pipeline: `python -m scripts.run_all`
 - `src/probes/probe.py` — LinearProbe (differentiable, for training) + SklearnProbe (for eval)
 - `scripts/run_all.py` — end-to-end overnight script
 
+## Running the experiments overnight
+
+### Quick start
+```bash
+cd /workspace/Activation-Steganography
+bash start.sh
+```
+This installs deps, verifies GPU, and launches the full pipeline in background via `nohup`.
+
+### What the pipeline does (scripts/run_all.py)
+1. **Phase 0 — Probe sweep** (~2h): Extracts activations at all 24 layers on SST-2, trains sklearn LogisticRegression per layer, picks target layer L (highest val AUC). Saves `results/baselines.json`.
+2. **Phase 2 — Adversarial training** (~4-6h): 5000 outer steps of minimax training. Inner loop trains linear probe on detached activations (5 SGD steps). Outer loop updates model with `loss = L_task + α·L_anchor - λ·L_probe`. Logs fresh probe AUC + generation samples every 100 steps. Checkpoints to `checkpoints/step_*/`. Saves `results/training_metrics.json`, `results/training_eval.json`, `results/training_generations.json`.
+3. **Phase 3 — Evaluation** (~1h): Fresh per-layer probe sweep on defended model, IMDB cross-dataset generalization, concept recovery attack (100 fine-tuning steps). Saves `results/eval.json`.
+
+### Monitoring
+```bash
+tail -f results/run_all.log    # structured experiment logs
+tail -f results/stdout.log     # raw output
+kill -0 $(cat results/run.pid) 2>/dev/null && echo 'Running' || echo 'Done'
+```
+
+### Results files
+- `results/baselines.json` — per-layer probe AUCs + selected target layer
+- `results/training_metrics.json` — per-step loss curves (l_task, l_anchor, l_probe, lambda)
+- `results/training_eval.json` — fresh probe AUC at every 100 steps during training
+- `results/training_generations.json` — model completions on fixed prompts at every 100 steps
+- `results/eval.json` — final: target layer AUC, best layer AUC, IMDB cross-dataset AUC, recovery curve
+
+### Success criteria
+- Target layer probe AUC: baseline >0.80 → defended <0.55
+- Best layer post-defense AUC: <0.60
+- IMDB cross-dataset AUC: similar to SST-2 (defense generalizes)
+- Recovery attack: if AUC recovers to >0.80 within 100 steps, hiding is superficial
+
+### Wandb
+Disabled by default. To enable: `export WANDB_API_KEY=your_key` before running `start.sh`.
+
+### GPU requirements
+~8-10GB VRAM (Pythia-410M params + ref model + optimizer + activations). Runs on A100, RTX 3090/4090/5090.
+
 ## Key references
 - Neural Chameleons (ICLR 2026) — most directly relevant, lr=2e-5, α=0.1
 - RLACE (ICML 2022) — minimax template, SGD lr=0.003
