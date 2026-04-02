@@ -34,7 +34,7 @@ class LinearProbe(nn.Module):
         Returns:
             (batch,) logits (pre-sigmoid).
         """
-        return self.linear(h).squeeze(-1)
+        return self.linear(h.to(self.linear.weight.dtype)).squeeze(-1)
 
 
 class SklearnProbe:

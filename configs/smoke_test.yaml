@@ -1,0 +1,46 @@
+model:
+  name: "EleutherAI/pythia-410m"
+  num_layers: 24
+  hidden_dim: 1024
+
+data:
+  sst2_max_length: 128
+  imdb_max_length: 256
+  owt_max_length: 512
+  owt_num_task: 200
+  owt_num_anchor: 100
+
+probe_sweep:
+  layers: null
+  probe_C: 1.0
+  probe_max_iter: 1000
+
+training:
+  outer_lr: 2.0e-5
+  outer_weight_decay: 0.01
+  outer_steps: 10
+  task_batch_size: 4
+  max_grad_norm: 1.0
+  alpha: 0.1
+  lambda_max: 1.0
+  lambda_warmup_steps: 5
+
+  inner_lr: 3.0e-3
+  inner_weight_decay: 1.0e-4
+  inner_steps: 2
+  probe_batch_size: 32
+  probe_reinit_every: 200
+
+  sft_every: 50
+  checkpoint_every: 5
+  early_stop_window: 500
+
+  device: "cuda"
+  dtype: "bfloat16"
+  checkpoint_dir: "checkpoints_smoke"
+  use_wandb: false
+
+evaluation:
+  recovery_steps: 5
+  recovery_lr: 2.0e-5
+  recovery_eval_every: 5

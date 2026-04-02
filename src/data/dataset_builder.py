@@ -24,7 +24,7 @@ def _hash_split(text: str, salt: str, boundaries: tuple[float, ...] = (0.7, 0.85
     frac = h / 10000
     if frac < boundaries[0]:
         return "train"
-    elif frac < boundaries[1]:
+    elif len(boundaries) > 1 and frac < boundaries[1]:
         return "val"
     return "test"
 
