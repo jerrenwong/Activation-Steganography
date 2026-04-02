@@ -1,0 +1,52 @@
+model:
+  name: "EleutherAI/pythia-410m"
+  num_layers: 24
+  hidden_dim: 1024
+
+data:
+  sst2_max_length: 128
+  imdb_max_length: 256
+  owt_max_length: 512
+  owt_num_task: 40000
+  owt_num_anchor: 2000
+
+probe_sweep:
+  # Phase 0: find optimal layer
+  layers: null  # null = all layers
+  probe_C: 1.0
+  probe_max_iter: 1000
+
+training:
+  # Outer loop
+  outer_lr: 2.0e-5
+  outer_weight_decay: 0.01
+  outer_steps: 5000
+  task_batch_size: 16
+  max_grad_norm: 1.0
+  alpha: 0.1
+  lambda_max: 1.0
+  lambda_warmup_steps: 1000
+
+  # Inner loop
+  inner_lr: 3.0e-3
+  inner_weight_decay: 1.0e-4
+  inner_steps: 5
+  probe_batch_size: 256
+  probe_reinit_every: 200
+
+  # Stability
+  sft_every: 50
+  checkpoint_every: 100
+  early_stop_window: 500
+
+  # Hardware
+  device: "cuda"
+  dtype: "bfloat16"
+  checkpoint_dir: "checkpoints"
+  use_wandb: true
+
+evaluation:
+  # Phase 3
+  recovery_steps: 100
+  recovery_lr: 2.0e-5
+  recovery_eval_every: 10
